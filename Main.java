@@ -1,35 +1,129 @@
-public class Main {
-    public static void main(String[] args) {
-        int[] arr1 = {64, 34, 25, 12, 22, 11, 90};
-        System.out.println("Antes da ordenação por inserção:");
-        printArray(arr1);
-        
-        Algorithms.insertionSort(arr1);
-        
-        System.out.println("Depois da ordenação por inserção:");
-        printArray(arr1);
-        
-        System.out.println();
-        
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 
-        int[] arr2 = {5, 2, 8, 1, 9, 3};
-        System.out.println("Antes da ordenação por bolha:");
-        printArray(arr2);
+public class Main {
+    
+    public static void main(String[] args) {
+        String dataFolder = "data/";
         
-        Algorithms.bubbleSort(arr2);
+        String[] files = {
+            "aleatorio_100.csv", "aleatorio_1000.csv", "aleatorio_10000.csv",
+            "crescente_100.csv", "crescente_1000.csv", "crescente_10000.csv",
+            "decrescente_100.csv", "decrescente_1000.csv", "decrescente_10000.csv"
+        };
         
-        System.out.println("Depois da ordenação por bolha:");
-        printArray(arr2);
+        String[] algorithms = {"bubble", "insertion", "quick"};
+        
+        System.out.println("=".repeat(100));
+        System.out.println("ALGORITMOS DE ORDENAÇÃO");
+        System.out.println("=".repeat(100));
+        System.out.printf("%-15s %-10s %-20s %-20s %-20s%n", 
+            "Tipo de Dados", "Tamanho", "Bubble Sort (ms)", "Insertion Sort (ms)", "Quick Sort (ms)");
+        System.out.println("=".repeat(100));
+        
+        for (String file : files) {
+            
+            int[] data = readCSV(dataFolder + file);
+            
+            if (data == null || data.length == 0) {
+                System.err.println("Erro ao processar arquivo: " + file);
+                continue;
+            }
+            
+            String[] parts = file.replace(".csv", "").split("_");
+            String tipo = capitalizeFirst(parts[0]);
+            String tamanho = parts[1];
+            
+            System.out.printf("%-15s %-10s ", tipo, tamanho);
+            
+            for (String algo : algorithms) {
+                long timeNano = measureSortTime(data, algo);
+                double timeMs = timeNano / 1_000_000.0;
+                System.out.printf("%-20.4f ", timeMs);
+            }
+            
+            System.out.println();
+        }
+        
+        System.out.println("=".repeat(100));
     }
     
-    public static void printArray(int[] arr) {
-        for (int i = 0; i < arr.length; i++) {
-            System.out.print(arr[i]);
-            if (i < arr.length - 1) {
-                System.out.print(", ");
+    public static int[] readCSV(String filename) {
+        int lineCount = 0;
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+            String line = br.readLine();
+            
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    lineCount++;
+                }
             }
+        } catch (IOException e) {
+            System.err.println("Erro ao ler arquivo: " + filename);
+            System.err.println("Certifique-se de que o arquivo está na pasta correta.");
+            e.printStackTrace();
+            return null;
         }
-        System.out.println();
+        
+        int[] data = new int[lineCount];
+        int index = 0;
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+            String line = br.readLine();
+            
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    data[index++] = Integer.parseInt(line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Erro ao ler arquivo: " + filename);
+            e.printStackTrace();
+            return null;
+        } catch (NumberFormatException e) {
+            System.err.println("Erro ao converter dados do arquivo: " + filename);
+            e.printStackTrace();
+            return null;
+        }
+        
+        return data;
+    }
+    
+    public static long measureSortTime(int[] arr, String algorithm) {
+        int[] copy = new int[arr.length];
+        for (int i = 0; i < arr.length; i++) {
+            copy[i] = arr[i];
+        }
+        
+        long startTime = System.nanoTime();
+        
+        switch (algorithm.toLowerCase()) {
+            case "bubble":
+                Algorithms.bubbleSort(copy);
+                break;
+            case "insertion":
+                Algorithms.insertionSort(copy);
+                break;
+            case "quick":
+                Algorithms.quickSort(copy);
+                break;
+            default:
+                System.err.println("Algoritmo desconhecido: " + algorithm);
+                return 0;
+        }
+        
+        long endTime = System.nanoTime();
+        
+        return endTime - startTime;
+    }
+    
+    private static String capitalizeFirst(String str) {
+        if (str == null || str.isEmpty()) { return str; }
+        
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 }
-
